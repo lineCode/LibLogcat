@@ -106,4 +106,6 @@ int send_shell_command(
 		StandardStreamsCallbackInterface* callback = &DEFAULT_STANDARD_STREAMS_CALLBACK,
         bool disable_shell_protocol = false);
 
+void adb_terminate();
+
 #endif  // COMMANDLINE_H

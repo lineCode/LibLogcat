@@ -302,6 +302,14 @@ bool adb_command(const std::string& service) {
 #endif //_BUILD_ALL
 
 #if _BUILD_ALL1
+//added by me
+static int serverFd = -1;
+void adb_terminate() {
+	if (serverFd != -1)
+		adb_shutdown(serverFd);
+	serverFd = -1;
+}
+
 bool adb_query(const std::string& service, std::string* result, std::string* error) {
     D("adb_query: %s", service.c_str());
     unique_fd fd(adb_connect(service, error));
@@ -310,6 +318,7 @@ bool adb_query(const std::string& service, std::string* result, std::string* err
     }
 
     result->clear();
+	serverFd = fd.get();
     if (!ReadProtocolString(fd.get(), result, error)) {
         return false;
     }

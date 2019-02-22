@@ -264,6 +264,16 @@ static int logcat(int argc, const char** argv, StandardStreamsCallbackInterface*
 	return send_shell_command(cmd, callback ? callback : &DEFAULT_STANDARD_STREAMS_CALLBACK);
 }
 
+static int adb_query_command(const std::string& command) {
+	std::string result;
+	std::string error;
+	if (!adb_query(command, &result, &error)) {
+		fprintf(stderr, "error: %s\n", error.c_str());
+		return 1;
+	}
+	printf("%s\n", result.c_str());
+	return 0;
+}
 
 int adb_commandline(int argc, const char** argv) {
 #if _BUILD_ALL
@@ -480,6 +490,12 @@ int adb_commandline(int argc, const char** argv) {
 		!strcmp(argv[0], "longcat")) {
 		return logcat(argc, argv);
 	}
+	else if (!strcmp(argv[0], "disconnect")) {
+
+		std::string query = android::base::StringPrintf("host:disconnect:%s",
+			(argc == 2) ? argv[1] : "");
+		return adb_query_command(query);
+	}
 	fprintf(stderr, "unknown command %s\n", argv[0]);
 	return 1;
 #if _BUILD_ALL
@@ -504,13 +520,6 @@ int adb_commandline(int argc, const char** argv) {
 		if (argc != 2) error_exit("usage: adb connect <host>[:<port>]");
 
 		std::string query = android::base::StringPrintf("host:connect:%s", argv[1]);
-		return adb_query_command(query);
-	}
-	else if (!strcmp(argv[0], "disconnect")) {
-		if (argc > 2) error_exit("usage: adb disconnect [<host>[:<port>]]");
-
-		std::string query = android::base::StringPrintf("host:disconnect:%s",
-			(argc == 2) ? argv[1] : "");
 		return adb_query_command(query);
 	}
 	else if (!strcmp(argv[0], "abb")) {

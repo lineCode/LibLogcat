@@ -5,13 +5,18 @@
 #include <iostream>
 
 extern int adb_commandline(int argc, const char** argv);
+extern void adb_terminate();
 
 //-v long: Display all metadata fields and separate messages with blank lines.
-const char* argv[] { "logcat", "-v", "long" };
+const char* cmdLogcat[]{ "logcat", "-v", "long" };
+const char* cmdDisconnect[]{ "disconnect" };
 
 int main()
 {
-	adb_commandline(_countof(argv), argv);
-    std::cout << "Hello World!\n"; 
+	adb_commandline(_countof(cmdLogcat), cmdLogcat);
+	adb_commandline(_countof(cmdDisconnect), cmdDisconnect);
+	//use adb_terminate() to terminate connection
+
+	std::cout << "Hello World!!!\n";
 	return 0;
 }
