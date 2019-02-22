@@ -17,6 +17,6 @@ int main()
 	adb_commandline(_countof(cmdDisconnect), cmdDisconnect);
 	//use adb_terminate() to terminate connection
 
-	std::cout << "Hello World!!!\n";
+	std::cout << "Hello World...\n";
 	return 0;
 }
