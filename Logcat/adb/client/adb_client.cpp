@@ -214,8 +214,10 @@ int adb_connect(const std::string& service, std::string* error) {
         // error is the original network connection error
         return fd;
     } else if (fd == -2) {
-        fprintf(stderr, "* daemon not running; starting now at %s\n", __adb_server_socket_spec);
-    start_server:
+		//fprintf(stderr, "** daemon not running; starting now at %s\n", __adb_server_socket_spec);
+		fprintf(stderr, "** daemon not runningat %s; start it by calling 'adb devices' \n", __adb_server_socket_spec);
+		return -1; //added by me !!TODO!!
+	start_server:
         if (launch_server(__adb_server_socket_spec)) {
             fprintf(stderr, "* failed to start daemon\n");
             // launch_server() has already printed detailed error info, so just

@@ -9,9 +9,7 @@ extern int adb_commandline(int argc, const char** argv);
 //-v long: Display all metadata fields and separate messages with blank lines.
 const char* argv[] { "logcat", "-v", "long" };
 
-// use wmain instead of main to have multibyte environment 
-// or use _tmain and set "Use Unicode Character Set" in project propertiies
-int wmain()
+int main()
 {
 	adb_commandline(_countof(argv), argv);
     std::cout << "Hello World!\n"; 

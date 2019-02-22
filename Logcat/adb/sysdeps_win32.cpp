@@ -2640,48 +2640,68 @@ static void _init_env() {
         return;
     }
 
-    if (_wenviron == nullptr) {
-        // If _wenviron is null, then -municode probably wasn't used. That
-        // linker flag will cause the entry point to setup _wenviron. It will
-        // also require an implementation of wmain() (which we provide above).
-        LOG(FATAL) << "_wenviron is not set, did you link with -municode?";
-    }
+    if (_wenviron != nullptr) {
+		// Read name/value pairs from UTF-16 _wenviron and write new name/value
+		// pairs to UTF-8 g_environ_utf8. Note that it probably does not make sense
+		// to use the D() macro here because that tracing only works if the
+		// ADB_TRACE environment variable is setup, but that env var can't be read
+		// until this code completes.
+		for (wchar_t** env = _wenviron; *env != nullptr; ++env) {
+			wchar_t* const equal = wcschr(*env, L'=');
+			if (equal == nullptr) {
+				// Malformed environment variable with no equal sign. Shouldn't
+				// really happen, but we should be resilient to this.
+				continue;
+			}
 
-    // Read name/value pairs from UTF-16 _wenviron and write new name/value
-    // pairs to UTF-8 g_environ_utf8. Note that it probably does not make sense
-    // to use the D() macro here because that tracing only works if the
-    // ADB_TRACE environment variable is setup, but that env var can't be read
-    // until this code completes.
-    for (wchar_t** env = _wenviron; *env != nullptr; ++env) {
-        wchar_t* const equal = wcschr(*env, L'=');
-        if (equal == nullptr) {
-            // Malformed environment variable with no equal sign. Shouldn't
-            // really happen, but we should be resilient to this.
-            continue;
-        }
+			// If we encounter an error converting UTF-16, don't error-out on account of a single env
+			// var because the program might never even read this particular variable.
+			std::string name_utf8;
+			if (!android::base::WideToUTF8(*env, equal - *env, &name_utf8)) {
+				continue;
+			}
 
-        // If we encounter an error converting UTF-16, don't error-out on account of a single env
-        // var because the program might never even read this particular variable.
-        std::string name_utf8;
-        if (!android::base::WideToUTF8(*env, equal - *env, &name_utf8)) {
-            continue;
-        }
+			// Store lowercase name so that we can do case-insensitive searches.
+			name_utf8 = ToLower(name_utf8);
 
-        // Store lowercase name so that we can do case-insensitive searches.
-        name_utf8 = ToLower(name_utf8);
+			std::string value_utf8;
+			if (!android::base::WideToUTF8(equal + 1, &value_utf8)) {
+				continue;
+			}
 
-        std::string value_utf8;
-        if (!android::base::WideToUTF8(equal + 1, &value_utf8)) {
-            continue;
-        }
+			char* const value_dup = _strdup(value_utf8.c_str());
 
-        char* const value_dup = _strdup(value_utf8.c_str());
+			// Don't overwrite a previus env var with the same name. In reality,
+			// the system probably won't let two env vars with the same name exist
+			// in _wenviron.
+			//LOG(INFO) << name_utf8 << " = " << value_dup;
+			g_environ_utf8.insert({ name_utf8, value_dup });
+		}
+	}
+	else if (_environ != nullptr) {
+		for (char ** env = _environ; *env != nullptr; ++env) {
+			char* equal = strchr(*env, L'=');
+			if (equal == nullptr) {
+				// Malformed environment variable with no equal sign. Shouldn't
+				// really happen, but we should be resilient to this.
+				continue;
+			}
+			char* const env_dup = _strdup(*env);
+			equal = strchr(env_dup, L'=');
+			*equal = 0;
+			char* name_dup = env_dup;
 
-        // Don't overwrite a previus env var with the same name. In reality,
-        // the system probably won't let two env vars with the same name exist
-        // in _wenviron.
-        g_environ_utf8.insert({name_utf8, value_dup});
-    }
+			for (char* p = name_dup; *p; p++)
+				*p = tolower(*p);
+
+			char* value_dup = equal + 1;
+			//LOG(INFO) << name_dup << " = " << value_dup;
+			g_environ_utf8.insert({ name_dup, value_dup });
+
+		}
+	} else {
+		LOG(FATAL) << "environ is not set";
+	}
 }
 
 // Version of getenv() that takes a UTF-8 environment variable name and
